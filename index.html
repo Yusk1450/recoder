@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>re:coder</title>
+	<link href="libs/bootstrap/css/bootstrap.css" rel="stylesheet">
+	<link rel="stylesheet" href="./style.css">
+	<script src="libs/ace/ace.js"></script>
+	<script src="libs/ace/mode-javascript.js"></script>
+	<script src="libs/ace/theme-twilight.js"></script>
+	<script>
+		window.$ = window.jQuery = require("./jquery-2.1.3.min.js");
+	</script>
+	<script src="libs/bootstrap/js/bootstrap.min.js"></script>
+</head>
+<body>
+	<div id="btnsArea">
+		<div class="controlBtn" id="runBtn">
+			<img src="imgs/RunBtn.png">
+			<div class="controlBtn_caption">Run</div>
+		</div>
+		<div id="controlBtnsArea">
+			<div class="controlBtn" id="playBtn">
+				<img src="imgs/PlayBtn.png">
+				<div class="controlBtn_caption">Play/Stop</div>
+			</div>
+			<div class="controlBtn">
+				<img src="imgs/PrevBtn.png">
+				<div class="controlBtn_caption">Prev</div>
+			</div>
+			<div class="controlBtn">
+				<img src="imgs/NextBtn.png">
+				<div class="controlBtn_caption">Next</div>
+			</div>
+			<div class="clear"></div>
+		</div>
+		<div class="clear"></div>
+	</div>
+
+	<input type="range" class="slider" min="0" max="0">
+
+	<div id="input_area">
+		<div id="input_txt"></div>
+	</div>
+
+	<div id="runOutput">
+
+	</div>
+	<script src="main.js"></script>
+</body>
+</html>

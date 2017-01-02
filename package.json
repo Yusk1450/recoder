@@ -1,0 +1,27 @@
+{
+  "name": "recoder",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron index.js"
+  },
+  "keywords": [],
+  "author": "ISHIGO Yusuke",
+  "devDependencies": {
+    "electron-connect": "^0.6.0",
+    "electron-default-menu": "^1.0.0",
+    "electron-packager": "^7.0.1",
+    "electron-prebuilt": "^1.2.1",
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.1",
+    "gulp-sass": "^2.3.2",
+    "gulp-sourcemaps": "^1.6.0",
+    "gulp-typescript": "^2.14.1",
+    "gulp-watch": "^4.3.10"
+  },
+  "dependencies": {
+    "del": "^2.2.2",
+    "rangeslider-js": "^2.1.1"
+  }
+}
