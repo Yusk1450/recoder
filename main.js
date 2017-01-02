@@ -4,6 +4,7 @@ var Editor = (function () {
     -------------------------------------------------------- */
     function Editor(editor) {
         this.editor = null;
+        this.isEditingFuncStopped = false;
         this.editor = editor;
         this.editor.$blockScrolling = Infinity;
         this.editor.getSession().setMode('ace/mode/processing');
@@ -13,8 +14,11 @@ var Editor = (function () {
     * 編集時に呼び出される処理を登録する
     -------------------------------------------------------- */
     Editor.prototype.editing = function (func) {
+        var self = this;
         this.editor.on('change', function (e) {
-            func(e);
+            if (!self.isEditingFuncStopped) {
+                func(e);
+            }
         });
     };
     /* --------------------------------------------------------
@@ -35,7 +39,9 @@ var Editor = (function () {
     * テキストをセットする
     -------------------------------------------------------- */
     Editor.prototype.setText = function (txt) {
+        this.isEditingFuncStopped = true;
         this.editor.setValue(txt);
+        this.isEditingFuncStopped = false;
     };
     return Editor;
 }());
@@ -120,8 +126,7 @@ var Logger = (function () {
         this.setupEditor();
     }
     Logger.prototype.setCurrentLogIndex = function (idx) {
-        console.log(this.getTextFromIndex(idx));
-        // this.editor.setText(this.getTextFromIndex(idx));
+        this.editor.setText(this.getTextFromIndex(idx));
     };
     /* --------------------------------------------------------
     * エディタの初期設定
@@ -162,7 +167,6 @@ var Logger = (function () {
             eventLog.type = e.action;
             self.eventLogs.push(eventLog);
             self.currentLogIndex = newLogIndex;
-            // console.log(self.getTextFromIndex(self.currentLogIndex));
             self.slider.attr('max', self.currentLogIndex);
             self.slider.val(self.currentLogIndex);
         });

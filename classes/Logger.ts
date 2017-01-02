@@ -36,8 +36,7 @@ class Logger
 
 	public setCurrentLogIndex(idx:number)
 	{
-		console.log(this.getTextFromIndex(idx));
-		// this.editor.setText(this.getTextFromIndex(idx));
+		this.editor.setText(this.getTextFromIndex(idx));
 	}
 
 	/* --------------------------------------------------------
@@ -98,8 +97,6 @@ class Logger
 			self.eventLogs.push(eventLog);
 
 			self.currentLogIndex = newLogIndex;
-
-			// console.log(self.getTextFromIndex(self.currentLogIndex));
 
 			self.slider.attr('max', self.currentLogIndex);
 			self.slider.val(self.currentLogIndex);

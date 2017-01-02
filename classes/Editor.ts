@@ -2,6 +2,7 @@
 class Editor
 {
 	private editor:any = null;
+	private isEditingFuncStopped = false;
 
 	/* --------------------------------------------------------
 	* コンストラクタ
@@ -20,8 +21,12 @@ class Editor
 	-------------------------------------------------------- */
 	public editing(func:(e:any)=>void)
 	{
+		var self = this;
 		this.editor.on('change', (e) => {
-			func(e);
+			if (!self.isEditingFuncStopped)
+			{
+				func(e);
+			}
 		});
 	}
 
@@ -49,6 +54,8 @@ class Editor
 	-------------------------------------------------------- */
 	public setText(txt:string)
 	{
+		this.isEditingFuncStopped = true;
 		this.editor.setValue(txt);
+		this.isEditingFuncStopped = false;
 	}
 }
