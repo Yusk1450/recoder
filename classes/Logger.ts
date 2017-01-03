@@ -1,4 +1,11 @@
 
+enum LogType
+{
+	Insert,
+	Remove,
+	Run
+}
+
 class Log
 {
 	public beginIndex:number = -1;					// 開始ログID
@@ -9,7 +16,7 @@ class Log
 class EventLog
 {
 	public timestamp:number;
-	public type = '';
+	public type:LogType;
 }
 
 class Logger
@@ -34,13 +41,6 @@ class Logger
 		this.setupEditor();
 	}
 
-	public setCurrentLogIndex(idx:number)
-	{
-		this.editor.setReadOnly(!(idx == this.getLatestLogIndex()));
-		this.currentLogIndex = idx;
-		this.editor.setText(this.getTextFromIndex(idx));
-	}
-
 	/* --------------------------------------------------------
 	* エディタの初期設定
 	-------------------------------------------------------- */
@@ -62,7 +62,6 @@ class Logger
 
 			const timestamp = (new Date()).getTime();
 			const newLogIndex = self.getLatestLogIndex() + 1;
-
 			const chars = e.lines[0];
 			const cnt = self.editor.charCount(e.start.column, e.start.row);
 
@@ -71,32 +70,43 @@ class Logger
 			{
 				const headIndex = self.getActualLogAryIndex(cnt);
 
-				for (var i = 0; i < chars.length; i++)
+				// 改行時の処理
+				if (e.lines.length == 2)
 				{
 					var log = new Log();
-					log.char = chars.charAt(i);
+					log.char = '\n';
 					log.beginIndex = newLogIndex;
 					log.endIndex = Number.MAX_VALUE;
 
-					self.logs.splice(headIndex + i, 0, log);
+					self.logs.splice(headIndex, 0, log);
 				}
+				else
+				{
+					for (var i = 0; i < chars.length; i++)
+					{
+						var log = new Log();
+						log.char = chars.charAt(i);
+						log.beginIndex = newLogIndex;
+						log.endIndex = Number.MAX_VALUE;
+
+						self.logs.splice(headIndex + i, 0, log);
+					}
+				}
+
+				self.logging(LogType.Insert, timestamp);
 			}
 			// 文字削除
 			else if (e.action === 'remove')
 			{
 				const headIndex = self.getActualLogAryIndex(cnt);
-				console.log(headIndex);
 
 				for (var i = 0; i < chars.length; i++)
 				{
 					self.logs[headIndex + i].endIndex = newLogIndex;
 				}
-			}
 
-			var eventLog = new EventLog();
-			eventLog.timestamp = timestamp;
-			eventLog.type = e.action;
-			self.eventLogs.push(eventLog);
+				self.logging(LogType.Remove, timestamp);
+			}
 
 			self.currentLogIndex = newLogIndex;
 
@@ -145,6 +155,27 @@ class Logger
 			}
 		}
 		return txt;
+	}
+
+	/* --------------------------------------------------------
+	* 指定したログインデックスに変更する
+	-------------------------------------------------------- */
+	public setCurrentLogIndex(idx:number)
+	{
+		this.editor.setReadOnly(!(idx == this.getLatestLogIndex()));
+		this.currentLogIndex = idx;
+		this.editor.setText(this.getTextFromIndex(idx));
+	}
+
+	/* --------------------------------------------------------
+	* ログをとる
+	-------------------------------------------------------- */
+	public logging(type:LogType, timestamp:number)
+	{
+		var eventLog = new EventLog();
+		eventLog.type = type;
+		eventLog.timestamp = timestamp;
+		this.eventLogs.push(eventLog);
 	}
 
 	/* --------------------------------------------------------

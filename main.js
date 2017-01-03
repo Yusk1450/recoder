@@ -100,6 +100,12 @@ var FileIO = (function () {
     };
     return FileIO;
 }());
+var LogType;
+(function (LogType) {
+    LogType[LogType["Insert"] = 0] = "Insert";
+    LogType[LogType["Remove"] = 1] = "Remove";
+    LogType[LogType["Run"] = 2] = "Run";
+})(LogType || (LogType = {}));
 var Log = (function () {
     function Log() {
         this.beginIndex = -1; // 開始ログID
@@ -110,7 +116,6 @@ var Log = (function () {
 }());
 var EventLog = (function () {
     function EventLog() {
-        this.type = '';
     }
     return EventLog;
 }());
@@ -131,11 +136,6 @@ var Logger = (function () {
         this.slider = slider;
         this.setupEditor();
     }
-    Logger.prototype.setCurrentLogIndex = function (idx) {
-        this.editor.setReadOnly(!(idx == this.getLatestLogIndex()));
-        this.currentLogIndex = idx;
-        this.editor.setText(this.getTextFromIndex(idx));
-    };
     /* --------------------------------------------------------
     * エディタの初期設定
     -------------------------------------------------------- */
@@ -155,25 +155,32 @@ var Logger = (function () {
             // 文字挿入
             if (e.action === 'insert') {
                 var headIndex = self.getActualLogAryIndex(cnt);
-                for (var i = 0; i < chars.length; i++) {
+                // 改行時の処理
+                if (e.lines.length == 2) {
                     var log = new Log();
-                    log.char = chars.charAt(i);
+                    log.char = '\n';
                     log.beginIndex = newLogIndex;
                     log.endIndex = Number.MAX_VALUE;
-                    self.logs.splice(headIndex + i, 0, log);
+                    self.logs.splice(headIndex, 0, log);
                 }
+                else {
+                    for (var i = 0; i < chars.length; i++) {
+                        var log = new Log();
+                        log.char = chars.charAt(i);
+                        log.beginIndex = newLogIndex;
+                        log.endIndex = Number.MAX_VALUE;
+                        self.logs.splice(headIndex + i, 0, log);
+                    }
+                }
+                self.logging(LogType.Insert, timestamp);
             }
             else if (e.action === 'remove') {
                 var headIndex = self.getActualLogAryIndex(cnt);
-                console.log(headIndex);
                 for (var i = 0; i < chars.length; i++) {
                     self.logs[headIndex + i].endIndex = newLogIndex;
                 }
+                self.logging(LogType.Remove, timestamp);
             }
-            var eventLog = new EventLog();
-            eventLog.timestamp = timestamp;
-            eventLog.type = e.action;
-            self.eventLogs.push(eventLog);
             self.currentLogIndex = newLogIndex;
             self.slider.attr('max', self.currentLogIndex);
             self.slider.val(self.currentLogIndex);
@@ -208,6 +215,23 @@ var Logger = (function () {
             }
         }
         return txt;
+    };
+    /* --------------------------------------------------------
+    * 指定したログインデックスに変更する
+    -------------------------------------------------------- */
+    Logger.prototype.setCurrentLogIndex = function (idx) {
+        this.editor.setReadOnly(!(idx == this.getLatestLogIndex()));
+        this.currentLogIndex = idx;
+        this.editor.setText(this.getTextFromIndex(idx));
+    };
+    /* --------------------------------------------------------
+    * ログをとる
+    -------------------------------------------------------- */
+    Logger.prototype.logging = function (type, timestamp) {
+        var eventLog = new EventLog();
+        eventLog.type = type;
+        eventLog.timestamp = timestamp;
+        this.eventLogs.push(eventLog);
     };
     /* --------------------------------------------------------
     * ログを再生する
