@@ -36,6 +36,8 @@ class Logger
 
 	public setCurrentLogIndex(idx:number)
 	{
+		this.editor.setReadOnly(!(idx == this.getLatestLogIndex()));
+		this.currentLogIndex = idx;
 		this.editor.setText(this.getTextFromIndex(idx));
 	}
 
@@ -59,7 +61,7 @@ class Logger
 			}
 
 			const timestamp = (new Date()).getTime();
-			const newLogIndex = self.currentLogIndex + 1;
+			const newLogIndex = self.getLatestLogIndex() + 1;
 
 			const chars = e.lines[0];
 			const cnt = self.editor.charCount(e.start.column, e.start.row);
@@ -114,7 +116,7 @@ class Logger
 		{
 			var log = this.logs[res];
 
-			if (log.beginIndex <= this.currentLogIndex && log.endIndex > this.currentLogIndex)
+			if (log.beginIndex <= this.getLatestLogIndex() && log.endIndex > this.getLatestLogIndex())
 			{
 				cnt++;
 			}
@@ -184,10 +186,13 @@ class Logger
 	-------------------------------------------------------- */
 	public getCurentText():string
 	{
-		return this.getTextFromIndex(this.currentLogIndex);
+		return this.getTextFromIndex(this.eventLogs.length-1);
 	}
 
-
+	public getLatestLogIndex():number
+	{
+		return this.eventLogs.length - 1;
+	}
 
 	/*
 	 * テストコード

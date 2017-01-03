@@ -43,6 +43,12 @@ var Editor = (function () {
         this.editor.setValue(txt);
         this.isEditingFuncStopped = false;
     };
+    /* --------------------------------------------------------
+    * 読み取り専用の切り替えを行う
+    -------------------------------------------------------- */
+    Editor.prototype.setReadOnly = function (isReadOnly) {
+        this.editor.setReadOnly(isReadOnly);
+    };
     return Editor;
 }());
 var fs = require('fs');
@@ -126,6 +132,8 @@ var Logger = (function () {
         this.setupEditor();
     }
     Logger.prototype.setCurrentLogIndex = function (idx) {
+        this.editor.setReadOnly(!(idx == this.getLatestLogIndex()));
+        this.currentLogIndex = idx;
         this.editor.setText(this.getTextFromIndex(idx));
     };
     /* --------------------------------------------------------
@@ -141,7 +149,7 @@ var Logger = (function () {
                 return;
             }
             var timestamp = (new Date()).getTime();
-            var newLogIndex = self.currentLogIndex + 1;
+            var newLogIndex = self.getLatestLogIndex() + 1;
             var chars = e.lines[0];
             var cnt = self.editor.charCount(e.start.column, e.start.row);
             // 文字挿入
@@ -179,7 +187,7 @@ var Logger = (function () {
         var cnt = -1;
         for (res = 0; res < this.logs.length; res++) {
             var log = this.logs[res];
-            if (log.beginIndex <= this.currentLogIndex && log.endIndex > this.currentLogIndex) {
+            if (log.beginIndex <= this.getLatestLogIndex() && log.endIndex > this.getLatestLogIndex()) {
                 cnt++;
             }
             if (cnt == idx) {
@@ -228,7 +236,10 @@ var Logger = (function () {
     * 現在のソースコードを返す
     -------------------------------------------------------- */
     Logger.prototype.getCurentText = function () {
-        return this.getTextFromIndex(this.currentLogIndex);
+        return this.getTextFromIndex(this.eventLogs.length - 1);
+    };
+    Logger.prototype.getLatestLogIndex = function () {
+        return this.eventLogs.length - 1;
     };
     return Logger;
 }());

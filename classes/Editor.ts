@@ -58,4 +58,12 @@ class Editor
 		this.editor.setValue(txt);
 		this.isEditingFuncStopped = false;
 	}
+
+	/* --------------------------------------------------------
+	* 読み取り専用の切り替えを行う
+	-------------------------------------------------------- */
+	public setReadOnly(isReadOnly:boolean)
+	{
+		this.editor.setReadOnly(isReadOnly);
+	}
 }
