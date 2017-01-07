@@ -8,25 +8,42 @@ const main = remote.require('./index');
 
 const $ = require('./jquery-2.1.3.min.js');
 
+function toInt(val:any):number
+{
+	return parseInt(val);
+}
+
 class Recoder
 {
 	public editor = new Editor(ace.edit('input_txt'));
 	public slider = $('.slider');
 	private fileIO = new FileIO();
-	private logger:Logger;
+	public logger:Logger;
 
 	/* --------------------------------------------------------
 	* コンストラクタ
 	-------------------------------------------------------- */
 	constructor()
 	{
-		var self = this;
-		this.slider.on('input change', () => {
-			self.logger.setCurrentLogIndex(self.slider.val());
+		this.logger = new Logger(this.editor);
+
+		this.slider.on('input change', () =>
+		{
+			this.logger.setCurrentLogIndex(this.slider.val());
 		});
 
-		this.logger = new Logger(this.editor, this.slider);
-		this.logger.isLogging = true;
+		this.logger.didLogging = () =>
+		{
+			const currentLogIndex = this.logger.getCurrentLogIndex();
+			
+			this.slider.attr('max', this.logger.getLatestLogIndex());
+			this.slider.val(currentLogIndex);
+		};
+
+		this.logger.didLogIndexChangedEvent = () =>
+		{
+			this.slider.val(this.logger.getCurrentLogIndex());
+		};
 	}
 
 	/* --------------------------------------------------------
@@ -34,9 +51,9 @@ class Recoder
 	-------------------------------------------------------- */
 	public run()
 	{
-		if (this.logger.isPlaying)
+		if (this.logger.getIsPlaying())
 		{
-			return
+			return;
 		}
 
 		this.save((dirpath) => {
@@ -49,7 +66,7 @@ class Recoder
 	-------------------------------------------------------- */
 	public play()
 	{
-		if (this.logger.isPlaying)
+		if (this.logger.getIsPlaying())
 		{
 			return;
 		}
@@ -60,9 +77,14 @@ class Recoder
 	/* --------------------------------------------------------
 	* 停止する
 	-------------------------------------------------------- */
-	public stop()
+	public pause()
 	{
+		if (!this.logger.getIsPlaying())
+		{
+			return;
+		}
 
+		this.logger.pause();
 	}
 
 	/* --------------------------------------------------------
@@ -117,8 +139,6 @@ class Recoder
 		const defPath = main.getDesktopPath();
 		const win = remote.getCurrentWindow();
 
-		const self = this;
-
 		dialog.showOpenDialog(win, {
 			defaultPath: defPath,
 			properties: ['openDirectory']
@@ -129,15 +149,20 @@ class Recoder
 				return;
 			}
 
-			self.fileIO.dirpath = o[0];
-			self.fileIO.load((text:string, log:string) => {
-				self.logger.loadLog(log);
+			this.fileIO.dirpath = o[0];
+			this.fileIO.load((text:string, log:string) => {
+				this.logger.loadLog(log);
 
 				// TODO: のちに削除（エディタの管理はLoggerの仕事）
 				// self.editor.setValue(text, -1);
 			});
 			complateFunc(o);
 		});
+	}
+
+	public getIsPlaying():boolean
+	{
+		return this.logger.getIsPlaying();
 	}
 }
 
@@ -148,22 +173,45 @@ $(function()
 {
 	var recoder = new Recoder();
 
-	$('#runBtn').click(function()
+	// 実行ボタンの処理
+	$('#runBtn').click(() =>
 	{
 		recoder.run();
 	});
 
+	// 再生終了時の処理
+	recoder.logger.didPlayEndEvent = () =>
+	{
+		$('#playBtn').children('img').attr('src', 'imgs/PlayBtn.png');
+	};
+
+	// 再生ボタンの処理
 	$('#playBtn').click(function()
 	{
-		recoder.play();
+		if (recoder.getIsPlaying())
+		{
+			$(this).children('img').attr('src', 'imgs/PlayBtn.png');
+			recoder.pause();
+		}
+		else
+		{
+			$(this).children('img').attr('src', 'imgs/PauseBtn.png');
+			recoder.play();
+		}
 	});
 
-	main.setOpenProc(function()
+	// 戻るボタンの処理
+	$('#prevBtn').click(() =>
+	{
+		recoder.logger.setCurrentLogIndex(0);
+	});
+
+	main.setOpenProc(() =>
 	{
 		recoder.showOpenDialog((dirpath) => {});
 	});
 
-	main.setSaveProc(function()
+	main.setSaveProc(() =>
 	{
 		recoder.save((dirpath) => {});
 	});

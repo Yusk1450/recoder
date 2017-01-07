@@ -17,22 +17,20 @@ class FileIO
 			return;
 		}
 
-		const self = this;
-
 		// ディレクトリが存在するかどうかを確認する
-		fs.exists(this.dirpath, function(exists:Boolean)
+		fs.exists(this.dirpath, (exists:boolean) =>
 		{
 			// ディレクトリ名
-			const dirname:string = path.basename(self.dirpath);
+			const dirname:string = path.basename(this.dirpath);
 
 			const proc = () =>
 			{
 				// ソースファイルの書き出し
-				fs.writeFile(self.dirpath+'/'+dirname+'.pde', logger.getCurentText());
+				fs.writeFile(this.dirpath+'/'+dirname+'.pde', logger.getCurentText());
 				// ログファイルの書き出し
-				fs.writeFile(self.dirpath+'/'+dirname+'.rec', 'bbb');
+				fs.writeFile(this.dirpath+'/'+dirname+'.rec', 'bbb');
 
-				complateFunc(self.dirpath);
+				complateFunc(this.dirpath);
 			};
 
 			if (exists)
@@ -42,7 +40,7 @@ class FileIO
 			else
 			{
 				// ディレクトリ作成
-				fs.mkdir(self.dirpath);
+				fs.mkdir(this.dirpath);
 				proc();
 			}
 		});

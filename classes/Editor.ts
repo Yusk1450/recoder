@@ -21,9 +21,9 @@ class Editor
 	-------------------------------------------------------- */
 	public editing(func:(e:any)=>void)
 	{
-		var self = this;
-		this.editor.on('change', (e) => {
-			if (!self.isEditingFuncStopped)
+		this.editor.on('change', (e) =>
+		{
+			if (!this.isEditingFuncStopped)
 			{
 				func(e);
 			}

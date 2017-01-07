@@ -1,9 +1,9 @@
 
 enum LogType
 {
-	Insert,
-	Remove,
-	Run
+	Insert,											// 文字入力
+	Remove,											// 文字削除
+	Run												// 実行
 }
 
 class Log
@@ -21,24 +21,30 @@ class EventLog
 
 class Logger
 {
-	private editor:Editor = null;						// エディタ
-	private slider:any = null;							// スライダ
-	public isLogging:boolean = false;					// ロギング中
-	public isPlaying:boolean = false;					// 再生中
+	private editor:Editor = null;							// エディタ
+	private isPlaying:boolean = false;						// 再生中
 	private logs:Log[] = [];
 	private eventLogs:EventLog[] = [];
 
-	private currentLogIndex = 0;						// 現在のログID
-	private startTimestamp = (new Date()).getTime();	// ログ開始タイムスタンプ
+	public maxDuration:number = 500;
+	private timerID:number = null;
+
+	private currentLogIndex:number = 0;						// 現在のログID
+
+	public didLogging:()=>void = ()=>{};					// ロギングイベント
+	public didEditEvent:()=>void = ()=>{};					// 編集終了イベント
+	public didLogIndexChangedEvent:()=>void = ()=>{};		// ログインデックス変更イベント
+	public didPlayEndEvent:()=>void = ()=>{};				// 再生終了イベント
 
 	/* --------------------------------------------------------
 	* コンストラクタ
 	-------------------------------------------------------- */
-	constructor(editor:Editor, slider:any)
+	constructor(editor:Editor)
 	{
 		this.editor = editor;
-		this.slider = slider;
 		this.setupEditor();
+
+		this.logging(LogType.Insert, (new Date()).getTime());
 	}
 
 	/* --------------------------------------------------------
@@ -51,24 +57,17 @@ class Logger
 			return;
 		}
 
-		var self = this;
-
-		this.editor.editing((e) => {
-
-			if (!self.isLogging)
-			{
-				return;
-			}
-
+		this.editor.editing((e) =>
+		{
 			const timestamp = (new Date()).getTime();
-			const newLogIndex = self.getLatestLogIndex() + 1;
+			const newLogIndex = this.getLatestLogIndex() + 1;
 			const chars = e.lines[0];
-			const cnt = self.editor.charCount(e.start.column, e.start.row);
+			const cnt = this.editor.charCount(e.start.column, e.start.row);
 
 			// 文字挿入
 			if (e.action === 'insert')
 			{
-				const headIndex = self.getActualLogAryIndex(cnt);
+				const headIndex = this.getActualLogAryIndex(cnt);
 
 				// 改行時の処理
 				if (e.lines.length == 2)
@@ -78,7 +77,7 @@ class Logger
 					log.beginIndex = newLogIndex;
 					log.endIndex = Number.MAX_VALUE;
 
-					self.logs.splice(headIndex, 0, log);
+					this.logs.splice(headIndex, 0, log);
 				}
 				else
 				{
@@ -89,34 +88,31 @@ class Logger
 						log.beginIndex = newLogIndex;
 						log.endIndex = Number.MAX_VALUE;
 
-						self.logs.splice(headIndex + i, 0, log);
+						this.logs.splice(headIndex + i, 0, log);
 					}
 				}
 
-				self.logging(LogType.Insert, timestamp);
+				this.logging(LogType.Insert, timestamp);
 			}
 			// 文字削除
 			else if (e.action === 'remove')
 			{
-				const headIndex = self.getActualLogAryIndex(cnt);
+				const headIndex = this.getActualLogAryIndex(cnt);
 
 				for (var i = 0; i < chars.length; i++)
 				{
-					self.logs[headIndex + i].endIndex = newLogIndex;
+					this.logs[headIndex + i].endIndex = newLogIndex;
 				}
 
-				self.logging(LogType.Remove, timestamp);
+				this.logging(LogType.Remove, timestamp);
 			}
 
-			self.currentLogIndex = newLogIndex;
-
-			self.slider.attr('max', self.currentLogIndex);
-			self.slider.val(self.currentLogIndex);
+			this.didEditEvent();
 		});
 	}
 
 	/* --------------------------------------------------------
-	* 
+	* 存在しているログのみをカウントしたインデックスを返す
 	-------------------------------------------------------- */
 	private getActualLogAryIndex(idx:number):number
 	{
@@ -158,13 +154,23 @@ class Logger
 	}
 
 	/* --------------------------------------------------------
-	* 指定したログインデックスに変更する
+	* 指定したログインデックスをセットする
 	-------------------------------------------------------- */
 	public setCurrentLogIndex(idx:number)
 	{
 		this.editor.setReadOnly(!(idx == this.getLatestLogIndex()));
 		this.currentLogIndex = idx;
 		this.editor.setText(this.getTextFromIndex(idx));
+
+		this.didLogIndexChangedEvent();
+	}
+
+	/* --------------------------------------------------------
+	* 現在のログインデックスを取得する
+	-------------------------------------------------------- */
+	public getCurrentLogIndex():number
+	{
+		return this.currentLogIndex;
 	}
 
 	/* --------------------------------------------------------
@@ -176,6 +182,18 @@ class Logger
 		eventLog.type = type;
 		eventLog.timestamp = timestamp;
 		this.eventLogs.push(eventLog);
+
+		this.currentLogIndex++;
+
+		this.didLogging();
+	}
+
+	/* --------------------------------------------------------
+	* 現在再生中かどうかを返す
+	-------------------------------------------------------- */
+	public getIsPlaying():boolean
+	{
+		return this.isPlaying;
 	}
 
 	/* --------------------------------------------------------
@@ -187,24 +205,60 @@ class Logger
 		{
 			return;
 		}
+		if (this.currentLogIndex == this.getLatestLogIndex())
+		{
+			this.setCurrentLogIndex(0);
+		}
+		if (this.currentLogIndex+1 > this.getLatestLogIndex())
+		{
+			this.didPlayEndEvent();
+			return;
+		}
 
-		this.isLogging = false;
+		this.isPlaying = true;
 
-		// if (this.eventLogs.length-1 < this.currentLogIndex+1)
-		// {
-		// 	return;
-		// }
-
-		// var self = this;
-		// setTimeout(function()
-		// {
-		// 	self.reproducing();
-		// }, 1000);
+		this.reproducing();
 	}
 
-	public reproducing()
+	/* --------------------------------------------------------
+	* ログの再生を一時停止する
+	-------------------------------------------------------- */
+	public pause()
 	{
-		console.log('aaa');
+		if (!this.isPlaying)
+		{
+			return;
+		}
+
+		this.isPlaying = false;
+		this.didPlayEndEvent();
+
+		if (this.timerID != null)
+		{
+			clearTimeout(this.timerID);
+		}
+	}
+
+	private reproducing()
+	{
+		if (this.currentLogIndex+1 > this.getLatestLogIndex())
+		{
+			this.timerID = null;
+			this.isPlaying = false;
+			this.didPlayEndEvent();
+			return;
+		}
+
+		const idx = toInt(this.currentLogIndex);
+		this.setCurrentLogIndex(idx+1);
+
+		var timestamp = this.eventLogs[idx + 1].timestamp - this.eventLogs[idx].timestamp;
+		var timestamp = Math.min(timestamp, this.maxDuration);
+
+		this.timerID = setTimeout(() =>
+		{
+			this.reproducing();
+		}, timestamp);
 	}
 
 	public loadLog(log:string)

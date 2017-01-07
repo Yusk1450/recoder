@@ -14,9 +14,9 @@ var Editor = (function () {
     * 編集時に呼び出される処理を登録する
     -------------------------------------------------------- */
     Editor.prototype.editing = function (func) {
-        var self = this;
+        var _this = this;
         this.editor.on('change', function (e) {
-            if (!self.isEditingFuncStopped) {
+            if (!_this.isEditingFuncStopped) {
                 func(e);
             }
         });
@@ -61,27 +61,27 @@ var FileIO = (function () {
     * 保存する
     -------------------------------------------------------- */
     FileIO.prototype.save = function (logger, complateFunc) {
+        var _this = this;
         if (this.dirpath === '') {
             return;
         }
-        var self = this;
         // ディレクトリが存在するかどうかを確認する
         fs.exists(this.dirpath, function (exists) {
             // ディレクトリ名
-            var dirname = path.basename(self.dirpath);
+            var dirname = path.basename(_this.dirpath);
             var proc = function () {
                 // ソースファイルの書き出し
-                fs.writeFile(self.dirpath + '/' + dirname + '.pde', logger.getCurentText());
+                fs.writeFile(_this.dirpath + '/' + dirname + '.pde', logger.getCurentText());
                 // ログファイルの書き出し
-                fs.writeFile(self.dirpath + '/' + dirname + '.rec', 'bbb');
-                complateFunc(self.dirpath);
+                fs.writeFile(_this.dirpath + '/' + dirname + '.rec', 'bbb');
+                complateFunc(_this.dirpath);
             };
             if (exists) {
                 proc();
             }
             else {
                 // ディレクトリ作成
-                fs.mkdir(self.dirpath);
+                fs.mkdir(_this.dirpath);
                 proc();
             }
         });
@@ -104,7 +104,7 @@ var LogType;
 (function (LogType) {
     LogType[LogType["Insert"] = 0] = "Insert";
     LogType[LogType["Remove"] = 1] = "Remove";
-    LogType[LogType["Run"] = 2] = "Run";
+    LogType[LogType["Run"] = 2] = "Run"; // 実行
 })(LogType || (LogType = {}));
 var Log = (function () {
     function Log() {
@@ -123,45 +123,45 @@ var Logger = (function () {
     /* --------------------------------------------------------
     * コンストラクタ
     -------------------------------------------------------- */
-    function Logger(editor, slider) {
+    function Logger(editor) {
         this.editor = null; // エディタ
-        this.slider = null; // スライダ
-        this.isLogging = false; // ロギング中
         this.isPlaying = false; // 再生中
         this.logs = [];
         this.eventLogs = [];
+        this.maxDuration = 500;
+        this.timerID = null;
         this.currentLogIndex = 0; // 現在のログID
-        this.startTimestamp = (new Date()).getTime(); // ログ開始タイムスタンプ
+        this.didLogging = function () { }; // ロギングイベント
+        this.didEditEvent = function () { }; // 編集終了イベント
+        this.didLogIndexChangedEvent = function () { }; // ログインデックス変更イベント
+        this.didPlayEndEvent = function () { }; // 再生終了イベント
         this.editor = editor;
-        this.slider = slider;
         this.setupEditor();
+        this.logging(LogType.Insert, (new Date()).getTime());
     }
     /* --------------------------------------------------------
     * エディタの初期設定
     -------------------------------------------------------- */
     Logger.prototype.setupEditor = function () {
+        var _this = this;
         if (!this.editor) {
             return;
         }
-        var self = this;
         this.editor.editing(function (e) {
-            if (!self.isLogging) {
-                return;
-            }
             var timestamp = (new Date()).getTime();
-            var newLogIndex = self.getLatestLogIndex() + 1;
+            var newLogIndex = _this.getLatestLogIndex() + 1;
             var chars = e.lines[0];
-            var cnt = self.editor.charCount(e.start.column, e.start.row);
+            var cnt = _this.editor.charCount(e.start.column, e.start.row);
             // 文字挿入
             if (e.action === 'insert') {
-                var headIndex = self.getActualLogAryIndex(cnt);
+                var headIndex = _this.getActualLogAryIndex(cnt);
                 // 改行時の処理
                 if (e.lines.length == 2) {
                     var log = new Log();
                     log.char = '\n';
                     log.beginIndex = newLogIndex;
                     log.endIndex = Number.MAX_VALUE;
-                    self.logs.splice(headIndex, 0, log);
+                    _this.logs.splice(headIndex, 0, log);
                 }
                 else {
                     for (var i = 0; i < chars.length; i++) {
@@ -169,25 +169,23 @@ var Logger = (function () {
                         log.char = chars.charAt(i);
                         log.beginIndex = newLogIndex;
                         log.endIndex = Number.MAX_VALUE;
-                        self.logs.splice(headIndex + i, 0, log);
+                        _this.logs.splice(headIndex + i, 0, log);
                     }
                 }
-                self.logging(LogType.Insert, timestamp);
+                _this.logging(LogType.Insert, timestamp);
             }
             else if (e.action === 'remove') {
-                var headIndex = self.getActualLogAryIndex(cnt);
+                var headIndex = _this.getActualLogAryIndex(cnt);
                 for (var i = 0; i < chars.length; i++) {
-                    self.logs[headIndex + i].endIndex = newLogIndex;
+                    _this.logs[headIndex + i].endIndex = newLogIndex;
                 }
-                self.logging(LogType.Remove, timestamp);
+                _this.logging(LogType.Remove, timestamp);
             }
-            self.currentLogIndex = newLogIndex;
-            self.slider.attr('max', self.currentLogIndex);
-            self.slider.val(self.currentLogIndex);
+            _this.didEditEvent();
         });
     };
     /* --------------------------------------------------------
-    *
+    * 存在しているログのみをカウントしたインデックスを返す
     -------------------------------------------------------- */
     Logger.prototype.getActualLogAryIndex = function (idx) {
         var res = 0;
@@ -217,12 +215,19 @@ var Logger = (function () {
         return txt;
     };
     /* --------------------------------------------------------
-    * 指定したログインデックスに変更する
+    * 指定したログインデックスをセットする
     -------------------------------------------------------- */
     Logger.prototype.setCurrentLogIndex = function (idx) {
         this.editor.setReadOnly(!(idx == this.getLatestLogIndex()));
         this.currentLogIndex = idx;
         this.editor.setText(this.getTextFromIndex(idx));
+        this.didLogIndexChangedEvent();
+    };
+    /* --------------------------------------------------------
+    * 現在のログインデックスを取得する
+    -------------------------------------------------------- */
+    Logger.prototype.getCurrentLogIndex = function () {
+        return this.currentLogIndex;
     };
     /* --------------------------------------------------------
     * ログをとる
@@ -232,6 +237,14 @@ var Logger = (function () {
         eventLog.type = type;
         eventLog.timestamp = timestamp;
         this.eventLogs.push(eventLog);
+        this.currentLogIndex++;
+        this.didLogging();
+    };
+    /* --------------------------------------------------------
+    * 現在再生中かどうかを返す
+    -------------------------------------------------------- */
+    Logger.prototype.getIsPlaying = function () {
+        return this.isPlaying;
     };
     /* --------------------------------------------------------
     * ログを再生する
@@ -240,19 +253,44 @@ var Logger = (function () {
         if (this.isPlaying) {
             return;
         }
-        this.isLogging = false;
-        // if (this.eventLogs.length-1 < this.currentLogIndex+1)
-        // {
-        // 	return;
-        // }
-        // var self = this;
-        // setTimeout(function()
-        // {
-        // 	self.reproducing();
-        // }, 1000);
+        if (this.currentLogIndex == this.getLatestLogIndex()) {
+            this.setCurrentLogIndex(0);
+        }
+        if (this.currentLogIndex + 1 > this.getLatestLogIndex()) {
+            this.didPlayEndEvent();
+            return;
+        }
+        this.isPlaying = true;
+        this.reproducing();
+    };
+    /* --------------------------------------------------------
+    * ログの再生を一時停止する
+    -------------------------------------------------------- */
+    Logger.prototype.pause = function () {
+        if (!this.isPlaying) {
+            return;
+        }
+        this.isPlaying = false;
+        this.didPlayEndEvent();
+        if (this.timerID != null) {
+            clearTimeout(this.timerID);
+        }
     };
     Logger.prototype.reproducing = function () {
-        console.log('aaa');
+        var _this = this;
+        if (this.currentLogIndex + 1 > this.getLatestLogIndex()) {
+            this.timerID = null;
+            this.isPlaying = false;
+            this.didPlayEndEvent();
+            return;
+        }
+        var idx = toInt(this.currentLogIndex);
+        this.setCurrentLogIndex(idx + 1);
+        var timestamp = this.eventLogs[idx + 1].timestamp - this.eventLogs[idx].timestamp;
+        var timestamp = Math.min(timestamp, this.maxDuration);
+        this.timerID = setTimeout(function () {
+            _this.reproducing();
+        }, timestamp);
     };
     Logger.prototype.loadLog = function (log) {
     };
@@ -284,26 +322,36 @@ var remote = require('electron').remote;
 var dialog = require('electron').remote.dialog;
 var main = remote.require('./index');
 var $ = require('./jquery-2.1.3.min.js');
+function toInt(val) {
+    return parseInt(val);
+}
 var Recoder = (function () {
     /* --------------------------------------------------------
     * コンストラクタ
     -------------------------------------------------------- */
     function Recoder() {
+        var _this = this;
         this.editor = new Editor(ace.edit('input_txt'));
         this.slider = $('.slider');
         this.fileIO = new FileIO();
-        var self = this;
+        this.logger = new Logger(this.editor);
         this.slider.on('input change', function () {
-            self.logger.setCurrentLogIndex(self.slider.val());
+            _this.logger.setCurrentLogIndex(_this.slider.val());
         });
-        this.logger = new Logger(this.editor, this.slider);
-        this.logger.isLogging = true;
+        this.logger.didLogging = function () {
+            var currentLogIndex = _this.logger.getCurrentLogIndex();
+            _this.slider.attr('max', _this.logger.getLatestLogIndex());
+            _this.slider.val(currentLogIndex);
+        };
+        this.logger.didLogIndexChangedEvent = function () {
+            _this.slider.val(_this.logger.getCurrentLogIndex());
+        };
     }
     /* --------------------------------------------------------
     * プログラムを実行する
     -------------------------------------------------------- */
     Recoder.prototype.run = function () {
-        if (this.logger.isPlaying) {
+        if (this.logger.getIsPlaying()) {
             return;
         }
         this.save(function (dirpath) {
@@ -314,7 +362,7 @@ var Recoder = (function () {
     * 再生する
     -------------------------------------------------------- */
     Recoder.prototype.play = function () {
-        if (this.logger.isPlaying) {
+        if (this.logger.getIsPlaying()) {
             return;
         }
         this.logger.play();
@@ -322,7 +370,11 @@ var Recoder = (function () {
     /* --------------------------------------------------------
     * 停止する
     -------------------------------------------------------- */
-    Recoder.prototype.stop = function () {
+    Recoder.prototype.pause = function () {
+        if (!this.logger.getIsPlaying()) {
+            return;
+        }
+        this.logger.pause();
     };
     /* --------------------------------------------------------
     * 保存する
@@ -362,9 +414,9 @@ var Recoder = (function () {
     * 読み込みダイアログを表示する
     -------------------------------------------------------- */
     Recoder.prototype.showOpenDialog = function (complateFunc) {
+        var _this = this;
         var defPath = main.getDesktopPath();
         var win = remote.getCurrentWindow();
-        var self = this;
         dialog.showOpenDialog(win, {
             defaultPath: defPath,
             properties: ['openDirectory']
@@ -373,14 +425,17 @@ var Recoder = (function () {
             if (o === undefined) {
                 return;
             }
-            self.fileIO.dirpath = o[0];
-            self.fileIO.load(function (text, log) {
-                self.logger.loadLog(log);
+            _this.fileIO.dirpath = o[0];
+            _this.fileIO.load(function (text, log) {
+                _this.logger.loadLog(log);
                 // TODO: のちに削除（エディタの管理はLoggerの仕事）
                 // self.editor.setValue(text, -1);
             });
             complateFunc(o);
         });
+    };
+    Recoder.prototype.getIsPlaying = function () {
+        return this.logger.getIsPlaying();
     };
     return Recoder;
 }());
@@ -389,11 +444,28 @@ var Recoder = (function () {
 -------------------------------------------------------- */
 $(function () {
     var recoder = new Recoder();
+    // 実行ボタンの処理
     $('#runBtn').click(function () {
         recoder.run();
     });
+    // 再生終了時の処理
+    recoder.logger.didPlayEndEvent = function () {
+        $('#playBtn').children('img').attr('src', 'imgs/PlayBtn.png');
+    };
+    // 再生ボタンの処理
     $('#playBtn').click(function () {
-        recoder.play();
+        if (recoder.getIsPlaying()) {
+            $(this).children('img').attr('src', 'imgs/PlayBtn.png');
+            recoder.pause();
+        }
+        else {
+            $(this).children('img').attr('src', 'imgs/PauseBtn.png');
+            recoder.play();
+        }
+    });
+    // 戻るボタンの処理
+    $('#prevBtn').click(function () {
+        recoder.logger.setCurrentLogIndex(0);
     });
     main.setOpenProc(function () {
         recoder.showOpenDialog(function (dirpath) { });
