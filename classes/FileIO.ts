@@ -26,7 +26,7 @@ class FileIO
 			const proc = () =>
 			{
 				// ソースファイルの書き出し（実行用）
-				fs.writeFile(this.dirpath+'/'+dirname+'.pde', logger.getCurentText());
+				fs.writeFile(this.dirpath+'/'+dirname+'.pde', logger.getCurrentText());
 
 				var output = {};
 				output['eventLogs'] = logger.getEventLogs();				// イベントログ

@@ -105,6 +105,24 @@ class Recoder
 	}
 
 	/* --------------------------------------------------------
+	* 前の実行ログまでジャンプする
+	-------------------------------------------------------- */
+	public prev()
+	{
+		const idx = this.logger.getPrevRunLogIndex();
+		this.logger.setCurrentLogIndex(idx);
+	}
+
+	/* --------------------------------------------------------
+	* 次の実行ログまでジャンプする
+	-------------------------------------------------------- */
+	public next()
+	{
+		const idx = this.logger.getNextRunLogIndex();
+		this.logger.setCurrentLogIndex(idx);
+	}
+
+	/* --------------------------------------------------------
 	* 保存する
 	-------------------------------------------------------- */
 	public save(complateFunc:(dirpath:string)=>void)
@@ -219,12 +237,12 @@ $(function()
 
 	$('#prevBtn').click(() =>
 	{
-		recoder.logger.setCurrentLogIndex(0);
+		recoder.prev();
 	});
 
 	$('#nextBtn').click(() =>
 	{
-
+		recoder.next();
 	});
 
 	main.setOpenProc(() =>

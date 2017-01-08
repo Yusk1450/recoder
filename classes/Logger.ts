@@ -270,7 +270,7 @@ class Logger
 		var timestamp = Math.min(timestamp, this.maxDuration);
 
 		this.didPlayingEvent(this.eventLogs[idx + 1].type);
-		
+
 		this.timerID = setTimeout(() =>
 		{
 			this.reproducing();
@@ -280,9 +280,9 @@ class Logger
 	/* --------------------------------------------------------
 	* 現在のソースコードを返す
 	-------------------------------------------------------- */
-	public getCurentText():string
+	public getCurrentText():string
 	{
-		return this.getTextFromIndex(this.eventLogs.length-1);
+		return this.getTextFromIndex(this.getCurrentLogIndex());
 	}
 
 	public getLatestLogIndex():number
@@ -305,8 +305,31 @@ class Logger
 		return this.logs;
 	}
 
-	/*
-	 * テストコード
-	*/
+	public getPrevRunLogIndex():number
+	{
+		var idx = this.getCurrentLogIndex();
+		while(idx > 0)
+		{
+			idx--;
+			if (this.eventLogs[idx].type == LogType.Run)
+			{
+				break;
+			}
+		}
+		return idx;
+	}
 
+	public getNextRunLogIndex():number
+	{
+		var idx = this.getCurrentLogIndex();
+		while(idx < this.getLatestLogIndex())
+		{
+			idx++;
+			if (this.eventLogs[idx].type == LogType.Run)
+			{
+				break;
+			}
+		}
+		return idx;
+	}
 }

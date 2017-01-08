@@ -71,7 +71,7 @@ var FileIO = (function () {
             var dirname = path.basename(_this.dirpath);
             var proc = function () {
                 // ソースファイルの書き出し（実行用）
-                fs.writeFile(_this.dirpath + '/' + dirname + '.pde', logger.getCurentText());
+                fs.writeFile(_this.dirpath + '/' + dirname + '.pde', logger.getCurrentText());
                 var output = {};
                 output['eventLogs'] = logger.getEventLogs(); // イベントログ
                 output['logs'] = logger.getLogs();
@@ -309,8 +309,8 @@ var Logger = (function () {
     /* --------------------------------------------------------
     * 現在のソースコードを返す
     -------------------------------------------------------- */
-    Logger.prototype.getCurentText = function () {
-        return this.getTextFromIndex(this.eventLogs.length - 1);
+    Logger.prototype.getCurrentText = function () {
+        return this.getTextFromIndex(this.getCurrentLogIndex());
     };
     Logger.prototype.getLatestLogIndex = function () {
         return this.eventLogs.length - 1;
@@ -323,6 +323,26 @@ var Logger = (function () {
     };
     Logger.prototype.getLogs = function () {
         return this.logs;
+    };
+    Logger.prototype.getPrevRunLogIndex = function () {
+        var idx = this.getCurrentLogIndex();
+        while (idx > 0) {
+            idx--;
+            if (this.eventLogs[idx].type == LogType.Run) {
+                break;
+            }
+        }
+        return idx;
+    };
+    Logger.prototype.getNextRunLogIndex = function () {
+        var idx = this.getCurrentLogIndex();
+        while (idx < this.getLatestLogIndex()) {
+            idx++;
+            if (this.eventLogs[idx].type == LogType.Run) {
+                break;
+            }
+        }
+        return idx;
     };
     return Logger;
 }());
@@ -412,6 +432,20 @@ var Recoder = (function () {
         this.logger.pause();
     };
     /* --------------------------------------------------------
+    * 前の実行ログまでジャンプする
+    -------------------------------------------------------- */
+    Recoder.prototype.prev = function () {
+        var idx = this.logger.getPrevRunLogIndex();
+        this.logger.setCurrentLogIndex(idx);
+    };
+    /* --------------------------------------------------------
+    * 次の実行ログまでジャンプする
+    -------------------------------------------------------- */
+    Recoder.prototype.next = function () {
+        var idx = this.logger.getNextRunLogIndex();
+        this.logger.setCurrentLogIndex(idx);
+    };
+    /* --------------------------------------------------------
     * 保存する
     -------------------------------------------------------- */
     Recoder.prototype.save = function (complateFunc) {
@@ -498,9 +532,10 @@ $(function () {
         }
     });
     $('#prevBtn').click(function () {
-        recoder.logger.setCurrentLogIndex(0);
+        recoder.prev();
     });
     $('#nextBtn').click(function () {
+        recoder.next();
     });
     main.setOpenProc(function () {
         recoder.showOpenDialog(function (dirpath) { });
