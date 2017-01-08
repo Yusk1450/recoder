@@ -27,12 +27,14 @@ class Recoder
 	{
 		this.logger = new Logger(this.editor);
 
+		// スライダーを変更したときに呼び出される
 		this.slider.on('input change', () =>
 		{
 			// console.log(this.slider.val());
 			this.logger.setCurrentLogIndex(this.slider.val());
 		});
 
+		// ロギングした際に呼び出される
 		this.logger.didLogging = () =>
 		{
 			// console.log(this.logger.getCurrentLogIndex());
@@ -40,10 +42,22 @@ class Recoder
 			this.slider.val(this.logger.getCurrentLogIndex());
 		};
 
+		// ログインデックスが変更されたときに呼び出される
 		this.logger.didLogIndexChangedEvent = () =>
 		{
 			this.slider.attr('max', this.logger.getLatestLogIndex());			
 			this.slider.val(this.logger.getCurrentLogIndex());
+		};
+
+		this.logger.didPlayingEvent = (logtype:LogType) =>
+		{
+			if (logtype == LogType.Run)
+			{
+				this.save((dirpath) =>
+				{
+					ProcessingUtil.run(dirpath);
+				});
+			}
 		};
 	}
 
@@ -57,7 +71,8 @@ class Recoder
 			return;
 		}
 
-		this.save((dirpath) => {
+		this.save((dirpath) =>
+		{
 			this.logger.logging(LogType.Run, (new Date()).getTime());
 			ProcessingUtil.run(dirpath);
 		});
@@ -94,11 +109,6 @@ class Recoder
 	-------------------------------------------------------- */
 	public save(complateFunc:(dirpath:string)=>void)
 	{
-		if (this.logger.getIsPlaying())
-		{
-			return;
-		}
-
 		if (this.fileIO.dirpath === '')
 		{
 			// 保存ダイアログを開いて保存する
@@ -182,19 +192,17 @@ $(function()
 {
 	var recoder = new Recoder();
 
-	// 実行ボタンの処理
-	$('#runBtn').click(() =>
-	{
-		recoder.run();
-	});
-
 	// 再生終了時の処理
 	recoder.logger.didPlayEndEvent = () =>
 	{
 		$('#playBtn').children('img').attr('src', 'imgs/PlayBtn.png');
 	};
 
-	// 再生ボタンの処理
+	$('#runBtn').click(() =>
+	{
+		recoder.run();
+	});
+
 	$('#playBtn').click(function()
 	{
 		if (recoder.getIsPlaying())
@@ -209,10 +217,14 @@ $(function()
 		}
 	});
 
-	// 戻るボタンの処理
 	$('#prevBtn').click(() =>
 	{
 		recoder.logger.setCurrentLogIndex(0);
+	});
+
+	$('#nextBtn').click(() =>
+	{
+
 	});
 
 	main.setOpenProc(() =>
@@ -222,7 +234,10 @@ $(function()
 
 	main.setSaveProc(() =>
 	{
-		recoder.save((dirpath) => {});
+		if (!recoder.logger.getIsPlaying())
+		{
+			recoder.save((dirpath) => {});
+		}
 	});
 
 	// document.ondragover = (e) => {

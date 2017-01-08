@@ -129,14 +129,15 @@ var Logger = (function () {
     function Logger(editor) {
         this.editor = null; // エディタ
         this.isPlaying = false; // 再生中
-        this.logs = [];
-        this.eventLogs = [];
+        this.logs = []; // 文字ログ
+        this.eventLogs = []; // イベントログ
         this.maxDuration = 500;
         this.timerID = null;
         this.currentLogIndex = 0; // 現在のログID
         this.didLogging = function () { }; // ロギングイベント
         this.didEditEvent = function () { }; // 編集終了イベント
         this.didLogIndexChangedEvent = function () { }; // ログインデックス変更イベント
+        this.didPlayingEvent = function () { }; // 再生中イベント
         this.didPlayEndEvent = function () { }; // 再生終了イベント
         this.editor = editor;
         this.setupEditor();
@@ -300,6 +301,7 @@ var Logger = (function () {
         this.setCurrentLogIndex(idx + 1);
         var timestamp = this.eventLogs[idx + 1].timestamp - this.eventLogs[idx].timestamp;
         var timestamp = Math.min(timestamp, this.maxDuration);
+        this.didPlayingEvent(this.eventLogs[idx + 1].type);
         this.timerID = setTimeout(function () {
             _this.reproducing();
         }, timestamp);
@@ -354,18 +356,28 @@ var Recoder = (function () {
         this.slider = $('.slider');
         this.fileIO = new FileIO();
         this.logger = new Logger(this.editor);
+        // スライダーを変更したときに呼び出される
         this.slider.on('input change', function () {
             // console.log(this.slider.val());
             _this.logger.setCurrentLogIndex(_this.slider.val());
         });
+        // ロギングした際に呼び出される
         this.logger.didLogging = function () {
             // console.log(this.logger.getCurrentLogIndex());
             _this.slider.attr('max', _this.logger.getLatestLogIndex());
             _this.slider.val(_this.logger.getCurrentLogIndex());
         };
+        // ログインデックスが変更されたときに呼び出される
         this.logger.didLogIndexChangedEvent = function () {
             _this.slider.attr('max', _this.logger.getLatestLogIndex());
             _this.slider.val(_this.logger.getCurrentLogIndex());
+        };
+        this.logger.didPlayingEvent = function (logtype) {
+            if (logtype == LogType.Run) {
+                _this.save(function (dirpath) {
+                    ProcessingUtil.run(dirpath);
+                });
+            }
         };
     }
     /* --------------------------------------------------------
@@ -403,9 +415,6 @@ var Recoder = (function () {
     * 保存する
     -------------------------------------------------------- */
     Recoder.prototype.save = function (complateFunc) {
-        if (this.logger.getIsPlaying()) {
-            return;
-        }
         if (this.fileIO.dirpath === '') {
             // 保存ダイアログを開いて保存する
             this.showSaveDialog(complateFunc);
@@ -471,15 +480,13 @@ var Recoder = (function () {
 -------------------------------------------------------- */
 $(function () {
     var recoder = new Recoder();
-    // 実行ボタンの処理
-    $('#runBtn').click(function () {
-        recoder.run();
-    });
     // 再生終了時の処理
     recoder.logger.didPlayEndEvent = function () {
         $('#playBtn').children('img').attr('src', 'imgs/PlayBtn.png');
     };
-    // 再生ボタンの処理
+    $('#runBtn').click(function () {
+        recoder.run();
+    });
     $('#playBtn').click(function () {
         if (recoder.getIsPlaying()) {
             $(this).children('img').attr('src', 'imgs/PlayBtn.png');
@@ -490,15 +497,18 @@ $(function () {
             recoder.play();
         }
     });
-    // 戻るボタンの処理
     $('#prevBtn').click(function () {
         recoder.logger.setCurrentLogIndex(0);
+    });
+    $('#nextBtn').click(function () {
     });
     main.setOpenProc(function () {
         recoder.showOpenDialog(function (dirpath) { });
     });
     main.setSaveProc(function () {
-        recoder.save(function (dirpath) { });
+        if (!recoder.logger.getIsPlaying()) {
+            recoder.save(function (dirpath) { });
+        }
     });
     // document.ondragover = (e) => {
     // 	e.preventDefault();

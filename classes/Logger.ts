@@ -21,20 +21,21 @@ class EventLog
 
 class Logger
 {
-	private editor:Editor = null;							// エディタ
-	private isPlaying:boolean = false;						// 再生中
-	private logs:Log[] = [];
-	private eventLogs:EventLog[] = [];
+	private editor:Editor = null;								// エディタ
+	private isPlaying:boolean = false;							// 再生中
+	private logs:Log[] = [];									// 文字ログ
+	private eventLogs:EventLog[] = [];							// イベントログ
 
 	public maxDuration:number = 500;
 	private timerID:number = null;
 
-	private currentLogIndex:number = 0;						// 現在のログID
+	private currentLogIndex:number = 0;							// 現在のログID
 
-	public didLogging:()=>void = ()=>{};					// ロギングイベント
-	public didEditEvent:()=>void = ()=>{};					// 編集終了イベント
-	public didLogIndexChangedEvent:()=>void = ()=>{};		// ログインデックス変更イベント
-	public didPlayEndEvent:()=>void = ()=>{};				// 再生終了イベント
+	public didLogging:()=>void = ()=>{};						// ロギングイベント
+	public didEditEvent:()=>void = ()=>{};						// 編集終了イベント
+	public didLogIndexChangedEvent:()=>void = ()=>{};			// ログインデックス変更イベント
+	public didPlayingEvent:(logtype:LogType)=>void = ()=>{};	// 再生中イベント
+	public didPlayEndEvent:()=>void = ()=>{};					// 再生終了イベント
 
 	/* --------------------------------------------------------
 	* コンストラクタ
@@ -268,6 +269,8 @@ class Logger
 		var timestamp = this.eventLogs[idx + 1].timestamp - this.eventLogs[idx].timestamp;
 		var timestamp = Math.min(timestamp, this.maxDuration);
 
+		this.didPlayingEvent(this.eventLogs[idx + 1].type);
+		
 		this.timerID = setTimeout(() =>
 		{
 			this.reproducing();
