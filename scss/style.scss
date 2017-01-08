@@ -25,6 +25,7 @@ html, body
 	height     : 52px;
 	text-align : center;
 	font-size  : 0.6em;
+	margin-top : 5px;
 
 	#controlBtnsArea
 	{
@@ -74,7 +75,7 @@ html, body
 .slider
 {
 	width                 : 100%;
-	margin-top            : 80px;
+	margin-top            : 85px;
     -webkit-appearance    : none;
     cursor                : pointer;
     width                 : 100%;
@@ -86,6 +87,7 @@ html, body
 	border-radius         : 24px;
     -webkit-border-radius : 24px;
 	-moz-border-radius    : 24px;
+	position : fixed;
 }
 
 .slider::-webkit-slider-thumb
@@ -117,7 +119,7 @@ html, body
 
 #input_area
 {
-	padding-top : 16px;
+	padding-top : 120px;
 	height      : 100%;
 }
 

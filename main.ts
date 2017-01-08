@@ -29,19 +29,20 @@ class Recoder
 
 		this.slider.on('input change', () =>
 		{
+			// console.log(this.slider.val());
 			this.logger.setCurrentLogIndex(this.slider.val());
 		});
 
 		this.logger.didLogging = () =>
 		{
-			const currentLogIndex = this.logger.getCurrentLogIndex();
-			
+			// console.log(this.logger.getCurrentLogIndex());
 			this.slider.attr('max', this.logger.getLatestLogIndex());
-			this.slider.val(currentLogIndex);
+			this.slider.val(this.logger.getCurrentLogIndex());
 		};
 
 		this.logger.didLogIndexChangedEvent = () =>
 		{
+			this.slider.attr('max', this.logger.getLatestLogIndex());			
 			this.slider.val(this.logger.getCurrentLogIndex());
 		};
 	}
@@ -57,6 +58,7 @@ class Recoder
 		}
 
 		this.save((dirpath) => {
+			this.logger.logging(LogType.Run, (new Date()).getTime());
 			ProcessingUtil.run(dirpath);
 		});
 	}
@@ -92,6 +94,11 @@ class Recoder
 	-------------------------------------------------------- */
 	public save(complateFunc:(dirpath:string)=>void)
 	{
+		if (this.logger.getIsPlaying())
+		{
+			return;
+		}
+
 		if (this.fileIO.dirpath === '')
 		{
 			// 保存ダイアログを開いて保存する
@@ -136,6 +143,11 @@ class Recoder
 	-------------------------------------------------------- */
 	public showOpenDialog(complateFunc:(dirpath:string)=>void)
 	{
+		if (this.logger.getIsPlaying())
+		{
+			return;
+		}
+
 		const defPath = main.getDesktopPath();
 		const win = remote.getCurrentWindow();
 
@@ -151,10 +163,7 @@ class Recoder
 
 			this.fileIO.dirpath = o[0];
 			this.fileIO.load((text:string, log:string) => {
-				this.logger.loadLog(log);
-
-				// TODO: のちに削除（エディタの管理はLoggerの仕事）
-				// self.editor.setValue(text, -1);
+				this.logger.loadLogFromJSON(log);
 			});
 			complateFunc(o);
 		});

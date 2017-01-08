@@ -25,10 +25,15 @@ class FileIO
 
 			const proc = () =>
 			{
-				// ソースファイルの書き出し
+				// ソースファイルの書き出し（実行用）
 				fs.writeFile(this.dirpath+'/'+dirname+'.pde', logger.getCurentText());
+
+				var output = {};
+				output['eventLogs'] = logger.getEventLogs();				// イベントログ
+				output['logs'] = logger.getLogs();
+
 				// ログファイルの書き出し
-				fs.writeFile(this.dirpath+'/'+dirname+'.rec', 'bbb');
+				fs.writeFile(this.dirpath+'/'+dirname+'.rec', JSON.stringify(output));
 
 				complateFunc(this.dirpath);
 			};
@@ -56,10 +61,10 @@ class FileIO
 			return;
 		}
 
-		const dirname:string = path.basename(this.dirpath);
+		const dirname = path.basename(this.dirpath);
 
-		const text:string = fs.readFileSync(this.dirpath + '/' + dirname + '.pde').toString();
-		const log:string = fs.readFileSync(this.dirpath + '/' + dirname + '.rec').toString();
+		const text = fs.readFileSync(this.dirpath + '/' + dirname + '.pde').toString();
+		const log = fs.readFileSync(this.dirpath + '/' + dirname + '.rec').toString();
 
 		complateFunc(text, log);
 	}

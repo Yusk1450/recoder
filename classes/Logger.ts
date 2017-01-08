@@ -47,9 +47,9 @@ class Logger
 		this.logging(LogType.Insert, (new Date()).getTime());
 	}
 
-	/* --------------------------------------------------------
+	/* 
 	* エディタの初期設定
-	-------------------------------------------------------- */
+	*/
 	private setupEditor()
 	{
 		if (!this.editor)
@@ -111,9 +111,9 @@ class Logger
 		});
 	}
 
-	/* --------------------------------------------------------
+	/*
 	* 存在しているログのみをカウントしたインデックスを返す
-	-------------------------------------------------------- */
+	*/
 	private getActualLogAryIndex(idx:number):number
 	{
 		var res = 0;
@@ -135,10 +135,10 @@ class Logger
 		return res;
 	}
 
-	/* --------------------------------------------------------
+	/* 
 	* 指定した時点のソースコードを返す
-	-------------------------------------------------------- */
-	private getTextFromIndex(idx:number):string
+	*/
+	public getTextFromIndex(idx:number):string
 	{
 		var txt = '';
 		for (var i = 0; i < this.logs.length; i++)
@@ -151,6 +151,19 @@ class Logger
 			}
 		}
 		return txt;
+	}
+
+	/* --------------------------------------------------------
+	* ログの読み込み
+	-------------------------------------------------------- */
+	public loadLogFromJSON(json:string)
+	{
+		const data = JSON.parse(json);
+
+		this.eventLogs = data['eventLogs'];
+		this.logs = data['logs'];
+
+		this.setCurrentLogIndex(this.getLatestLogIndex());
 	}
 
 	/* --------------------------------------------------------
@@ -261,11 +274,6 @@ class Logger
 		}, timestamp);
 	}
 
-	public loadLog(log:string)
-	{
-
-	}
-
 	/* --------------------------------------------------------
 	* 現在のソースコードを返す
 	-------------------------------------------------------- */
@@ -277,6 +285,21 @@ class Logger
 	public getLatestLogIndex():number
 	{
 		return this.eventLogs.length - 1;
+	}
+
+	public getLatestText():string
+	{
+		return this.getTextFromIndex(this.getLatestLogIndex());
+	}
+
+	public getEventLogs():EventLog[]
+	{
+		return this.eventLogs;
+	}
+
+	public getLogs():Log[]
+	{
+		return this.logs;
 	}
 
 	/*
