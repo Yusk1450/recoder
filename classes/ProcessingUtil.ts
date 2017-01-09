@@ -8,8 +8,6 @@ class ProcessingUtil
 		const command = 'processing-java --sketch='+dirpath+' --output='+dirpath+'/output --force --run';
 		exec(command, (error, stdout, stderr) => {
 			comp(stdout, stderr);
-			// console.log(stdout);
-			// console.log(stderr);
 		});
 	}
 }

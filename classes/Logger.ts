@@ -192,6 +192,12 @@ class Logger
 	-------------------------------------------------------- */
 	public logging(type:LogType, timestamp:number)
 	{
+		// 連続の実行ログは記録しない
+		if ((type == LogType.Run) && (this.eventLogs[this.getLatestLogIndex()].type == LogType.Run))
+		{
+			return;
+		}
+
 		var eventLog = new EventLog();
 		eventLog.type = type;
 		eventLog.timestamp = timestamp;

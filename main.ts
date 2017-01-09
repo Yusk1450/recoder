@@ -19,6 +19,7 @@ class Recoder
 	public slider = $('.slider');
 	private fileIO = new FileIO();
 	public logger:Logger;
+	public didRunEvent:(stdout:string, stderr:string)=>void;
 
 	/* --------------------------------------------------------
 	* コンストラクタ
@@ -55,7 +56,10 @@ class Recoder
 			{
 				this.save((dirpath) =>
 				{
-					// ProcessingUtil.run(dirpath);
+					ProcessingUtil.run(dirpath, (out:string, err:string) =>
+					{
+						this.didRunEvent(out, err);
+					});
 				});
 			}
 		};
@@ -76,16 +80,7 @@ class Recoder
 			this.logger.logging(LogType.Run, (new Date()).getTime());
 			ProcessingUtil.run(dirpath, (out:string, err:string) =>
 			{
-				var textarea = $('#runOutput');
-
-				textarea.css('color', '#5bc0de');
-				textarea.html(out);
-
-				if (err !== '')
-				{
-					textarea.css('color', '#d9534f');
-					textarea.html(err);
-				}
+				this.didRunEvent(out, err);
 			});
 		});
 	}
@@ -256,6 +251,20 @@ $(function()
 	{
 		recoder.next();
 	});
+
+	recoder.didRunEvent = (stdout:string, stderr:string) =>
+	{
+		var textarea = $('#runOutput');
+
+		textarea.css('color', '#5bc0de');
+		textarea.html(stdout);
+
+		if (stderr !== '')
+		{
+			textarea.css('color', '#d9534f');
+			textarea.html(stderr);
+		}
+	};
 
 	main.setOpenProc(() =>
 	{

@@ -246,6 +246,10 @@ var Logger = (function () {
     * ログをとる
     -------------------------------------------------------- */
     Logger.prototype.logging = function (type, timestamp) {
+        // 連続の実行ログは記録しない
+        if ((type == LogType.Run) && (this.eventLogs[this.getLatestLogIndex()].type == LogType.Run)) {
+            return;
+        }
         var eventLog = new EventLog();
         eventLog.type = type;
         eventLog.timestamp = timestamp;
@@ -354,8 +358,6 @@ var ProcessingUtil = (function () {
         var command = 'processing-java --sketch=' + dirpath + ' --output=' + dirpath + '/output --force --run';
         exec(command, function (error, stdout, stderr) {
             comp(stdout, stderr);
-            // console.log(stdout);
-            // console.log(stderr);
         });
     };
     return ProcessingUtil;
@@ -396,7 +398,9 @@ var Recoder = (function () {
         this.logger.didPlayingEvent = function (logtype) {
             if (logtype == LogType.Run) {
                 _this.save(function (dirpath) {
-                    // ProcessingUtil.run(dirpath);
+                    ProcessingUtil.run(dirpath, function (out, err) {
+                        _this.didRunEvent(out, err);
+                    });
                 });
             }
         };
@@ -412,13 +416,7 @@ var Recoder = (function () {
         this.save(function (dirpath) {
             _this.logger.logging(LogType.Run, (new Date()).getTime());
             ProcessingUtil.run(dirpath, function (out, err) {
-                var textarea = $('#runOutput');
-                textarea.css('color', '#5bc0de');
-                textarea.html(out);
-                if (err !== '') {
-                    textarea.css('color', '#d9534f');
-                    textarea.html(err);
-                }
+                _this.didRunEvent(out, err);
             });
         });
     };
@@ -546,6 +544,15 @@ $(function () {
     $('#nextBtn').click(function () {
         recoder.next();
     });
+    recoder.didRunEvent = function (stdout, stderr) {
+        var textarea = $('#runOutput');
+        textarea.css('color', '#5bc0de');
+        textarea.html(stdout);
+        if (stderr !== '') {
+            textarea.css('color', '#d9534f');
+            textarea.html(stderr);
+        }
+    };
     main.setOpenProc(function () {
         recoder.showOpenDialog(function (dirpath) { });
     });
