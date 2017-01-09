@@ -55,7 +55,7 @@ class Recoder
 			{
 				this.save((dirpath) =>
 				{
-					ProcessingUtil.run(dirpath);
+					// ProcessingUtil.run(dirpath);
 				});
 			}
 		};
@@ -74,7 +74,19 @@ class Recoder
 		this.save((dirpath) =>
 		{
 			this.logger.logging(LogType.Run, (new Date()).getTime());
-			ProcessingUtil.run(dirpath);
+			ProcessingUtil.run(dirpath, (out:string, err:string) =>
+			{
+				var textarea = $('#runOutput');
+
+				textarea.css('color', '#5bc0de');
+				textarea.html(out);
+
+				if (err !== '')
+				{
+					textarea.css('color', '#d9534f');
+					textarea.html(err);
+				}
+			});
 		});
 	}
 

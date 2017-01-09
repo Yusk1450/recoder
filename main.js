@@ -350,11 +350,12 @@ var exec = require('child_process').exec;
 var ProcessingUtil = (function () {
     function ProcessingUtil() {
     }
-    ProcessingUtil.run = function (dirpath) {
+    ProcessingUtil.run = function (dirpath, comp) {
         var command = 'processing-java --sketch=' + dirpath + ' --output=' + dirpath + '/output --force --run';
         exec(command, function (error, stdout, stderr) {
-            console.log(stdout);
-            console.log(stderr);
+            comp(stdout, stderr);
+            // console.log(stdout);
+            // console.log(stderr);
         });
     };
     return ProcessingUtil;
@@ -395,7 +396,7 @@ var Recoder = (function () {
         this.logger.didPlayingEvent = function (logtype) {
             if (logtype == LogType.Run) {
                 _this.save(function (dirpath) {
-                    ProcessingUtil.run(dirpath);
+                    // ProcessingUtil.run(dirpath);
                 });
             }
         };
@@ -410,7 +411,15 @@ var Recoder = (function () {
         }
         this.save(function (dirpath) {
             _this.logger.logging(LogType.Run, (new Date()).getTime());
-            ProcessingUtil.run(dirpath);
+            ProcessingUtil.run(dirpath, function (out, err) {
+                var textarea = $('#runOutput');
+                textarea.css('color', '#5bc0de');
+                textarea.html(out);
+                if (err !== '') {
+                    textarea.css('color', '#d9534f');
+                    textarea.html(err);
+                }
+            });
         });
     };
     /* --------------------------------------------------------

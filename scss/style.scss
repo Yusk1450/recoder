@@ -119,12 +119,32 @@ html, body
 
 #input_area
 {
-	padding-top : 120px;
-	height      : 100%;
+	padding-top    : 120px;
+	padding-bottom : 60px;
+	height         : 100%;
 }
 
 #input_txt
 {
 	width  : 100%;
 	height : 100%;
+}
+
+/* ====================================
+ * 標準・エラー出力
+==================================== */
+#runOutput
+{
+	width : 100%;
+	height : 60px;
+	color : #5bc0de;
+	background-color : #43484b;
+	position : fixed;
+	top : 540px;
+	font-family      : "Hiragino Kaku Gothic ProN","メイリオ", sans-serif;	
+
+	&:focus
+	{
+		outline: 0;
+	}
 }
