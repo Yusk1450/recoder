@@ -1,7 +1,8 @@
 {
   "name": "recoder",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Software for visualizing and sharing the coding process in open source.",
   "main": "index.js",
   "scripts": {
     "start": "electron index.js"
@@ -9,6 +10,7 @@
   "keywords": [],
   "author": "ISHIGO Yusuke",
   "devDependencies": {
+    "electron": "^1.4.13",
     "electron-connect": "^0.6.0",
     "electron-default-menu": "^1.0.0",
     "electron-packager": "^7.0.1",

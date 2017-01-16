@@ -154,27 +154,27 @@ var Logger = (function () {
         this.editor.editing(function (e) {
             var timestamp = (new Date()).getTime();
             var newLogIndex = _this.getLatestLogIndex() + 1;
-            var chars = e.lines[0];
+            // const chars = e.lines[0];
             var cnt = _this.editor.charCount(e.start.column, e.start.row);
+            // 複数行を配列に変換する
+            var chars = '';
+            for (var i = 0; i < e.lines.length; i++) {
+                for (var j = 0; j < e.lines[i].length; j++) {
+                    chars += e.lines[i].charAt(j);
+                }
+                chars += '\n';
+            }
+            // 最後の改行を削除する
+            chars = chars.substr(0, chars.length - 1);
             // 文字挿入
             if (e.action === 'insert') {
                 var headIndex = _this.getActualLogAryIndex(cnt);
-                // 改行時の処理
-                if (e.lines.length == 2) {
+                for (var i = 0; i < chars.length; i++) {
                     var log = new Log();
-                    log.char = '\n';
+                    log.char = chars.charAt(i);
                     log.beginIndex = newLogIndex;
                     log.endIndex = Number.MAX_VALUE;
-                    _this.logs.splice(headIndex, 0, log);
-                }
-                else {
-                    for (var i = 0; i < chars.length; i++) {
-                        var log = new Log();
-                        log.char = chars.charAt(i);
-                        log.beginIndex = newLogIndex;
-                        log.endIndex = Number.MAX_VALUE;
-                        _this.logs.splice(headIndex + i, 0, log);
-                    }
+                    _this.logs.splice(headIndex + i, 0, log);
                 }
                 _this.logging(LogType.Insert, timestamp);
             }
@@ -185,6 +185,7 @@ var Logger = (function () {
                 }
                 _this.logging(LogType.Remove, timestamp);
             }
+            console.log(_this.getCurrentText());
             _this.didEditEvent();
         });
     };
