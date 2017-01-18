@@ -40,7 +40,7 @@ var Editor = (function () {
     -------------------------------------------------------- */
     Editor.prototype.setText = function (txt) {
         this.isEditingFuncStopped = true;
-        this.editor.setValue(txt);
+        this.editor.setValue(txt, 1);
         this.isEditingFuncStopped = false;
     };
     /* --------------------------------------------------------
@@ -48,6 +48,15 @@ var Editor = (function () {
     -------------------------------------------------------- */
     Editor.prototype.setReadOnly = function (isReadOnly) {
         this.editor.setReadOnly(isReadOnly);
+    };
+    Editor.prototype.scrollToRow = function (row) {
+        this.editor.scrollToRow(row);
+    };
+    /* --------------------------------------------------------
+    * 読み取り専用の切り替えを行う
+    -------------------------------------------------------- */
+    Editor.prototype.getCursorPosition = function () {
+        return this.editor.getCursorPosition();
     };
     return Editor;
 }());
@@ -154,7 +163,6 @@ var Logger = (function () {
         this.editor.editing(function (e) {
             var timestamp = (new Date()).getTime();
             var newLogIndex = _this.getLatestLogIndex() + 1;
-            // const chars = e.lines[0];
             var cnt = _this.editor.charCount(e.start.column, e.start.row);
             // 複数行を配列に変換する
             var chars = '';
@@ -185,7 +193,6 @@ var Logger = (function () {
                 }
                 _this.logging(LogType.Remove, timestamp);
             }
-            console.log(_this.getCurrentText());
             _this.didEditEvent();
         });
     };
@@ -235,6 +242,8 @@ var Logger = (function () {
         this.editor.setReadOnly(!(idx == this.getLatestLogIndex()));
         this.currentLogIndex = idx;
         this.editor.setText(this.getTextFromIndex(idx));
+        var cursorPos = this.eventLogs[idx].cursorPosition;
+        this.editor.scrollToRow(cursorPos['row']);
         this.didLogIndexChangedEvent();
     };
     /* --------------------------------------------------------
@@ -254,6 +263,7 @@ var Logger = (function () {
         var eventLog = new EventLog();
         eventLog.type = type;
         eventLog.timestamp = timestamp;
+        eventLog.cursorPosition = this.editor.getCursorPosition();
         this.eventLogs.push(eventLog);
         this.currentLogIndex++;
         this.didLogging();

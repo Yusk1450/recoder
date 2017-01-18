@@ -17,6 +17,7 @@ class EventLog
 {
 	public timestamp:number;
 	public type:LogType;
+	public cursorPosition:{[key: string]: number};
 }
 
 class Logger
@@ -62,7 +63,6 @@ class Logger
 		{
 			const timestamp = (new Date()).getTime();
 			const newLogIndex = this.getLatestLogIndex() + 1;
-			// const chars = e.lines[0];
 			const cnt = this.editor.charCount(e.start.column, e.start.row);
 
 			// 複数行を配列に変換する
@@ -107,8 +107,6 @@ class Logger
 
 				this.logging(LogType.Remove, timestamp);
 			}
-
-			console.log(this.getCurrentText());
 
 			this.didEditEvent();
 		});
@@ -178,6 +176,9 @@ class Logger
 		this.currentLogIndex = idx;
 		this.editor.setText(this.getTextFromIndex(idx));
 
+		const cursorPos = this.eventLogs[idx].cursorPosition;
+		this.editor.scrollToRow(cursorPos['row']);
+
 		this.didLogIndexChangedEvent();
 	}
 
@@ -203,6 +204,7 @@ class Logger
 		var eventLog = new EventLog();
 		eventLog.type = type;
 		eventLog.timestamp = timestamp;
+		eventLog.cursorPosition = this.editor.getCursorPosition();
 		this.eventLogs.push(eventLog);
 
 		this.currentLogIndex++;

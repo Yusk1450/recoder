@@ -55,7 +55,7 @@ class Editor
 	public setText(txt:string)
 	{
 		this.isEditingFuncStopped = true;
-		this.editor.setValue(txt);
+		this.editor.setValue(txt, 1);
 		this.isEditingFuncStopped = false;
 	}
 
@@ -65,5 +65,18 @@ class Editor
 	public setReadOnly(isReadOnly:boolean)
 	{
 		this.editor.setReadOnly(isReadOnly);
+	}
+
+	public scrollToRow(row:number)
+	{
+		this.editor.scrollToRow(row);
+	}
+
+	/* --------------------------------------------------------
+	* 読み取り専用の切り替えを行う
+	-------------------------------------------------------- */
+	public getCursorPosition()
+	{
+		return this.editor.getCursorPosition();
 	}
 }
