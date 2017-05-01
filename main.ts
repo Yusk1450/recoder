@@ -256,7 +256,7 @@ $(function()
 	{
 		var textarea = $('#runOutput');
 
-		textarea.css('color', '#5bc0de');
+		textarea.css('color', '#fff');
 		textarea.html(stdout);
 
 		if (stderr !== '')

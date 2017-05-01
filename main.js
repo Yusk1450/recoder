@@ -1,3 +1,9 @@
+var EditorMode;
+(function (EditorMode) {
+    EditorMode[EditorMode["Normal"] = 0] = "Normal";
+    EditorMode[EditorMode["Coding"] = 1] = "Coding";
+})(EditorMode || (EditorMode = {}));
+;
 var Editor = (function () {
     /* --------------------------------------------------------
     * コンストラクタ
@@ -6,10 +12,23 @@ var Editor = (function () {
         this.editor = null;
         this.isEditingFuncStopped = false;
         this.editor = editor;
+        this.setModeType(EditorMode.Coding);
         this.editor.$blockScrolling = Infinity;
-        this.editor.getSession().setMode('ace/mode/processing');
-        this.editor.setTheme('ace/theme/twilight');
     }
+    /* --------------------------------------------------------
+    * エディタモードを設定する
+    -------------------------------------------------------- */
+    Editor.prototype.setModeType = function (mode) {
+        switch (mode) {
+            case EditorMode.Normal:
+                this.editor.getSession().setMode('');
+                break;
+            case EditorMode.Coding:
+                this.editor.getSession().setMode('ace/mode/processing');
+                this.editor.setTheme('ace/theme/twilight');
+                break;
+        }
+    };
     /* --------------------------------------------------------
     * 編集時に呼び出される処理を登録する
     -------------------------------------------------------- */
@@ -49,6 +68,9 @@ var Editor = (function () {
     Editor.prototype.setReadOnly = function (isReadOnly) {
         this.editor.setReadOnly(isReadOnly);
     };
+    /* --------------------------------------------------------
+    * 指定した行までスクロールする
+    -------------------------------------------------------- */
     Editor.prototype.scrollToRow = function (row) {
         this.editor.scrollToRow(row);
     };
@@ -366,7 +388,7 @@ var ProcessingUtil = (function () {
     function ProcessingUtil() {
     }
     ProcessingUtil.run = function (dirpath, comp) {
-        var command = 'processing-java --sketch=' + dirpath + ' --output=' + dirpath + '/output --force --run';
+        var command = '/usr/local/bin/processing-java --sketch=' + dirpath + ' --output=' + dirpath + '/output --force --run';
         exec(command, function (error, stdout, stderr) {
             comp(stdout, stderr);
         });
@@ -557,7 +579,7 @@ $(function () {
     });
     recoder.didRunEvent = function (stdout, stderr) {
         var textarea = $('#runOutput');
-        textarea.css('color', '#5bc0de');
+        textarea.css('color', '#fff');
         textarea.html(stdout);
         if (stderr !== '') {
             textarea.css('color', '#d9534f');

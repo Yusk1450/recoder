@@ -7,6 +7,7 @@ const shell = electron.shell;
 const Menu = electron.Menu;
 const defaultMenu = require('electron-default-menu');
 
+var forceQuit = false;
 let mainWindow = null;
 
 var openProc = null;
@@ -19,17 +20,23 @@ function createMainWindow()
 {
 	mainWindow = new BrowserWindow(
 	{
-		width: 650
+		title: app.getName()
+		,width: 650
 		,height: 620
 		,'minWidth': 450
 		,'minHeight': 530
 		,'overlay-scrollbars':false
+		,"title-bar-style": "hidden-inset"
 	});
 	mainWindow.loadURL('file://' + __dirname + '/index.html');
-	mainWindow.webContents.openDevTools();
-	mainWindow.on('closed', function()
+	// mainWindow.webContents.openDevTools();
+	mainWindow.on('close', function(e)
 	{
-		mainWindow = null;
+		if (!forceQuit)
+		{
+			e.preventDefault();
+			mainWindow.hide();
+		}
 	});
 }
 
@@ -59,6 +66,41 @@ function installMenu()
 				}
 			]
 		});
+		menu.splice(5, 1, {
+			label: 'Help',
+			submenu: [
+				{
+					label: 'Getting Started',
+					accelerator: '',
+					click: () => {
+						shell.openExternal("https://processing.org/tutorials/gettingstarted/");
+					}
+				},
+				{
+					label: 'Reference',
+					accelerator: '',
+					click: () => {
+						shell.openExternal("https://processing.org/reference/");
+					}
+				},
+				{type: 'separator'},
+				{
+					label: 're:coder.yusk1450.com',
+					accelerator: '',
+					click: () => {
+						shell.openExternal("http://recoder.yusk1450.com/");
+					}
+				},
+				{
+					label: 'Processing.org',
+					accelerator: '',
+					click: () => {
+						shell.openExternal("https://processing.org/");
+					}
+				}
+			]
+		});
+
 		Menu.setApplicationMenu(Menu.buildFromTemplate(menu));
 	}
 	else
@@ -73,23 +115,27 @@ app.on('ready', function()
 	installMenu();
 });
 
-/* --------------------------------------------------------
- * すべてのウィンドウを閉じたときに呼び出される
--------------------------------------------------------- */
 app.on('window-all-closed', function()
 {
-	if (process.platform !== 'darwin')
+	if (process.platform != 'darwin')
 	{
 		app.quit();
 	}
 });
 
+app.on('before-quit', function(e)
+{
+	forceQuit = true;
+});
+
+app.on('will-quit', function()
+{
+	mainWindow = null;
+});
+
 app.on('activate', function()
 {
-	if (mainWindow === null)
-	{
-		createMainWindow();
-	}
+	mainWindow.show();
 });
 
 /* --------------------------------------------------------

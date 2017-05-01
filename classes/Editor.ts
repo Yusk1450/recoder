@@ -1,4 +1,10 @@
 
+enum EditorMode
+{
+	Normal,
+	Coding
+};
+
 class Editor
 {
 	private editor:any = null;
@@ -10,10 +16,26 @@ class Editor
 	constructor(editor:any)
 	{
 		this.editor = editor;
-
+		this.setModeType(EditorMode.Coding);
 		this.editor.$blockScrolling = Infinity; 
-		this.editor.getSession().setMode('ace/mode/processing');
-		this.editor.setTheme('ace/theme/twilight');
+	}
+
+	/* --------------------------------------------------------
+	* エディタモードを設定する
+	-------------------------------------------------------- */
+	public setModeType(mode:EditorMode)
+	{
+		switch(mode)
+		{
+			case EditorMode.Normal:
+				this.editor.getSession().setMode('');
+				break;
+
+			case EditorMode.Coding:
+				this.editor.getSession().setMode('ace/mode/processing');
+				this.editor.setTheme('ace/theme/twilight');
+				break;
+		}
 	}
 
 	/* --------------------------------------------------------
@@ -67,6 +89,9 @@ class Editor
 		this.editor.setReadOnly(isReadOnly);
 	}
 
+	/* --------------------------------------------------------
+	* 指定した行までスクロールする
+	-------------------------------------------------------- */
 	public scrollToRow(row:number)
 	{
 		this.editor.scrollToRow(row);
