@@ -15,7 +15,7 @@
     "gulp-typescript": "^2.14.1"
   },
   "dependencies": {
-    "electron": "^1.6.3",
+    "electron": "^9.1.0",
     "electron-default-menu": "^1.0.0",
     "del": "^2.2.2",
     "rangeslider-js": "^2.1.1"
